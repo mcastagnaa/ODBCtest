@@ -1,0 +1,343 @@
+---
+title: "Volatility of Assets and Portfolios"
+author: "Emily Miller"
+date: "July 2015"
+output:
+  pdf_document:
+  includes:
+  in_header: pdflscape.tex
+  number_sections: yes
+  word_document: default
+---
+
+# Introduction
+In this article, we will explore how the MVaRonVaR is a good measurement to show the most volatile asset within a portfolio. We will look at how R has been used to find the expected most volatile asset, and the actual most volatile asset. This will then be used to find what percentage of the time the two match up. 
+
+Through doing this we can see the volatiliy of certain assets and look at which assets are the most volatile. As well as the frequencies at which they appear at the top. 
+
+This is all done through the Vivaldi database.
+
+```{r LoadPackages, message=FALSE, echo=TRUE}
+library(ggplot2)
+```
+\newpage
+
+# Risk/Weight Ratio
+
+Risk/Weight Ratio allows us to see which asset has the highest volatility per Weight. This means that this asset may not be the one that affects the portfolio enough (because it has a small weight) however means that if all the weights +were to be equal within the portfolio then this would be the asset which would cause the portfolio to be more volatile.
+
+Looking at the portfolio "Old Mutual UK Mid Cap Fund" (UKMCO, Portfolio number 42) we can see which asset has the most movement and volatility within the portfolio each day or week over a given time period.
+
+For example, over the past two years we can see on a graph, what was the most expected volatile asset each week.
+```{r firstChunk, echo=FALSE}
+finalSet <- readRDS("riskSet_allData")
+finalSet.agg <- aggregate(RiskByWeight ~ pDate, finalSet, max)
+
+# then simply merge with the original
+finalSet.max <- merge(finalSet.agg, finalSet)
+finalSet.max$Descr <- factor(finalSet.max$Descr)
+
+x <-finalSet.max$pDate 
+y <-factor(finalSet.max$Descr)
+
+#qplot(x,y)
+ggplot(data.frame(x, y), aes(x,y)) + geom_point() + xlab("")+ylab("")
+
+```
+
+Currently Optimal Payments and Just Eat are the expected most volatile asset. However this does not mean that it will necessarily affect the portfolio as such, as this set of data does not take into account the weight (size) of the asset within the portfolio. There can be an asset which is less volatile but due to its size it has the biggest affect on the portfolio, we will look at this later. 
+
+The expected most volatile asset varys throughout the different industry groups throughout the two years. For example, we can see that the industry sector varies from Consumer, Cyclical to Communications. There is a lot more diversity within the Industry group. 
+
+As you can see, to begin with Thomas Cook is the most expected volatile asset, and continues to be for a long time. Over the sample period, we can see that Thomas Cook Group was the most frequently expected volatile asset. However, stops being so somewhere in the middle of 2014. It was sold at this time so no longer has any weighting in the portfolio. This can be seen by finding the assets weight every week over the two year period. 
+
+```{r SecondChunk, echo=FALSE}
+finalSet <- readRDS("ThomasCookWeight")
+plot(x = finalSet$pDate, y = finalSet$Weight, xlab = "Date", ylab = "Weight")
+
+```
+
+The graph above confirms the idea that the asset was sold from the portfolio by the continuining line on the zero y-axes. This shows that Thomas Cook Group had a weighting of zero (no weight) within the portfolio.
+
+\newpage
+
+# Total Risk Expected
+
+The total risk produced, takes into account the weighting of the asset aswell as its risk, instead of finding the ratio it finds the total risk value. From the graph we can see that the asset expected to affect the portfolio the most is different to the assets seen before for the ratio.
+
+```{r ThirdChunk, echo=FALSE}
+finalSet.max <- readRDS("totalassetWeights")
+x <-finalSet.max$pDate 
+y <-factor(finalSet.max$Descr)
+
+#qplot(x,y)
+ggplot(data.frame(x, y), aes(x,y)) + geom_point() + xlab("")+ylab("")
+
+```
+
+In this case, the asset with the highest volatiliy frequency expected over the two years is Ashtead Group. This can be seen by the table above. Ashstead has been expected to have had the most influence on what happens to the portfolio for a large period of the past two years. The majority of this was in the year 2014, Ashtead was the highest influencer expected of the portfolio for the majority of 2014. 
+
+As you can see, recently, Just Eat and Optimal Payments have been expected to be the highest influence on the portfolio. This is because the Just Eat asset is new to the market. This stops the beta value from being accurate as the scatter plots are so vaired (due to the asset being new) so it is difficult to find a truely accurate line of regression to base the beta around. We will look at the accuracy of the Beta Value later on. 
+
+Just Eat and Optimal Payments were the most volatile for both the Total risk expected and the Risk Weight ratio expected. 
+
+\newpage
+
+# Total Risk Reality
+
+We can look at what the actual asset that affected the portfolio the most each week was. This can be done by looking at the data from the past two years. 
+
+```{r FourthChunk, echo=FALSE}
+perfSet <- readRDS("ActualRisk")
+x <-perfSet$pDate 
+y <-factor(perfSet$assetName)
+
+#qplot(x,y)
+ggplot(data.frame(x, y), aes(x,y)) + geom_point() + xlab("")+ylab("")
+
+```
+
+From looking at the graph, we see that the assets affecting the portfolio the most is a much more varied list then that expected. The list of actual contributors over the past two years includes a larger diversity in Industry Sector and Industry Group. The expected assets do appear in the actual assets quite frequently as expected. 
+
+The graph allows us to see how the market can fluctuate and change regularly. There will be human and physical factors that affect the volatility of an Asset. For example, in the graph we can see that many of the assets only appear once as the most affecting asset. This helps us to see the unpredictable nature of the market.
+
+In the case of EasyJet, we can see that this asset only appears once, it could be that in this particular week EasyJet had a significant corporate event. This is simply not predictable.
+
+\newpage
+
+# Percentage of matches between expected and reality
+
+From seeing which assets contribute the most to the portfolios volatility, and the expected assets for this. We can now use this information to find the percentage of the time over the two year period where the expected value was correct.
+
+Below is the dates and assets where the expected matches the actual. As you can see, that for the period of time of two years, there was a small amount of matching. Ashtead group matched the most to begin with. The trend spotted earlier can be recognised in this table, where Ashtead is early on, and then recently the highest contributor is Just Eat. The most recent match was Optimal Payments, which, shown in our other graphs is becoming a larger contributor more recently.
+
+```{r FifthChunk, echo=FALSE}
+Success <- readRDS("success")
+print(Success)
+
+```
+
+The probability of getting a correct matching over the two years was 
+```{r sixthChunk, echo=FALSE}
+rm(list =ls(all=TRUE))
+
+perfSet <- readRDS("perfSet")
+finalSet <- readRDS("riskSet_allData")
+
+# Define top n risk contributors
+n = 1
+
+typicalPortSize <- nrow(finalSet)/nrow(perfSet)
+finalSet$WBeta <- finalSet$Weight*finalSet$Beta
+
+#change this to perform different sorting
+##############################
+selector <- finalSet$MVaRonVaR
+##############################
+
+#order the risk contributors by date
+finalSet <- finalSet[order(finalSet$pDate, selector, decreasing = T),]
+#pick the top n
+riskSet <- 
+  finalSet[ave(selector, finalSet$pDate, FUN = seq_along) <= n, ]
+#saveRDS(riskSet, file="riskSet")
+
+
+#uniquePerfComp <- unique(perfSet[,c("assetName", "assetCode")])
+uniqueRiskComp <- unique(riskSet[,c("AssetId", "Descr")])
+
+perfSet[3] <- lapply(perfSet[3], as.character)
+
+for(code in uniqueRiskComp$AssetId) {
+  perfSet$assetCode[perfSet$assetCode == substr(code, 1,6)] <- code
+}
+  
+combSet <- merge(perfSet, riskSet, by.x = "pDate" , by.y = "pDate")
+
+combSet$Test <- combSet$assetCode == combSet$AssetId
+match <- sum(combSet$Test)/nrow(perfSet)
+print(match)
+```
+.
+This is 20% of the time, which is not a huge amount of the time. This again helps to show the unpredictable nature of the market. 
+
+
+We can compare the values of MVaRonVaR with Weight*Beta, and the values of MVar/Weight with the values of Beta to see which gives the better percentage, and is the more accurate measurement. 
+
+The accuracy for MVaRonVaR is 
+```{r SeventhChunk, echo=FALSE}
+rm(list =ls(all=TRUE))
+
+perfSet <- readRDS("perfSet")
+finalSet <- readRDS("riskSet_allData")
+
+# Define top n risk contributors
+n = 1
+
+typicalPortSize <- nrow(finalSet)/nrow(perfSet)
+finalSet$WBeta <- finalSet$Weight*finalSet$Beta
+
+#change this to perform different sorting
+##############################
+selector <- finalSet$MVaRonVaR
+##############################
+
+#order the risk contributors by date
+finalSet <- finalSet[order(finalSet$pDate, selector, decreasing = T),]
+#pick the top n
+riskSet <- 
+  finalSet[ave(selector, finalSet$pDate, FUN = seq_along) <= n, ]
+#saveRDS(riskSet, file="riskSet")
+
+
+#uniquePerfComp <- unique(perfSet[,c("assetName", "assetCode")])
+uniqueRiskComp <- unique(riskSet[,c("AssetId", "Descr")])
+
+perfSet[3] <- lapply(perfSet[3], as.character)
+
+for(code in uniqueRiskComp$AssetId) {
+  perfSet$assetCode[perfSet$assetCode == substr(code, 1,6)] <- code
+}
+  
+combSet <- merge(perfSet, riskSet, by.x = "pDate" , by.y = "pDate")
+
+combSet$Test <- combSet$assetCode == combSet$AssetId
+match <- sum(combSet$Test)/nrow(perfSet)
+print(match)
+```
+
+And the accuracy of the Weight*Beta is 
+```{r EightChunk, echo=FALSE}
+rm(list =ls(all=TRUE))
+
+perfSet <- readRDS("perfSet")
+finalSet <- readRDS("riskSet_allData")
+
+# Define top n risk contributors
+n = 1
+
+typicalPortSize <- nrow(finalSet)/nrow(perfSet)
+finalSet$WBeta <- finalSet$Weight*finalSet$Beta
+
+#change this to perform different sorting
+##############################
+selector <- finalSet$WBeta
+##############################
+
+#order the risk contributors by date
+finalSet <- finalSet[order(finalSet$pDate, selector, decreasing = T),]
+#pick the top n
+riskSet <- 
+  finalSet[ave(selector, finalSet$pDate, FUN = seq_along) <= n, ]
+#saveRDS(riskSet, file="riskSet")
+
+
+#uniquePerfComp <- unique(perfSet[,c("assetName", "assetCode")])
+uniqueRiskComp <- unique(riskSet[,c("AssetId", "Descr")])
+
+perfSet[3] <- lapply(perfSet[3], as.character)
+
+for(code in uniqueRiskComp$AssetId) {
+  perfSet$assetCode[perfSet$assetCode == substr(code, 1,6)] <- code
+}
+  
+combSet <- merge(perfSet, riskSet, by.x = "pDate" , by.y = "pDate")
+
+combSet$Test <- combSet$assetCode == combSet$AssetId
+match <- sum(combSet$Test)/nrow(perfSet)
+print(match)
+```
+
+From the two values, we can see that the MVaRonVaR is a more accurate way of determining the asset with the highest contribution to the portfolio.
+
+This is backed up by the fact that the accuracy of MVaR/Weight is 
+
+```{r NinethChunk, echo=FALSE}
+rm(list =ls(all=TRUE))
+
+perfSet <- readRDS("perfSet")
+finalSet <- readRDS("riskSet_allData")
+
+# Define top n risk contributors
+n = 1
+
+typicalPortSize <- nrow(finalSet)/nrow(perfSet)
+finalSet$WBeta <- finalSet$Weight*finalSet$Beta
+
+#change this to perform different sorting
+##############################
+selector <- finalSet$RiskByWeight
+##############################
+
+#order the risk contributors by date
+finalSet <- finalSet[order(finalSet$pDate, selector, decreasing = T),]
+#pick the top n
+riskSet <- 
+  finalSet[ave(selector, finalSet$pDate, FUN = seq_along) <= n, ]
+#saveRDS(riskSet, file="riskSet")
+
+
+#uniquePerfComp <- unique(perfSet[,c("assetName", "assetCode")])
+uniqueRiskComp <- unique(riskSet[,c("AssetId", "Descr")])
+
+perfSet[3] <- lapply(perfSet[3], as.character)
+
+for(code in uniqueRiskComp$AssetId) {
+  perfSet$assetCode[perfSet$assetCode == substr(code, 1,6)] <- code
+}
+  
+combSet <- merge(perfSet, riskSet, by.x = "pDate" , by.y = "pDate")
+
+combSet$Test <- combSet$assetCode == combSet$AssetId
+match <- sum(combSet$Test)/nrow(perfSet)
+
+print(match)
+```
+
+and the accuracy of Beta is 
+
+```{r TenthChunk, echo=FALSE}
+rm(list =ls(all=TRUE))
+
+perfSet <- readRDS("perfSet")
+finalSet <- readRDS("riskSet_allData")
+
+# Define top n risk contributors
+n = 1
+
+typicalPortSize <- nrow(finalSet)/nrow(perfSet)
+finalSet$WBeta <- finalSet$Weight*finalSet$Beta
+
+#change this to perform different sorting
+##############################
+selector <- finalSet$Beta
+##############################
+
+#order the risk contributors by date
+finalSet <- finalSet[order(finalSet$pDate, selector, decreasing = T),]
+#pick the top n
+riskSet <- 
+  finalSet[ave(selector, finalSet$pDate, FUN = seq_along) <= n, ]
+#saveRDS(riskSet, file="riskSet")
+
+
+#uniquePerfComp <- unique(perfSet[,c("assetName", "assetCode")])
+uniqueRiskComp <- unique(riskSet[,c("AssetId", "Descr")])
+
+perfSet[3] <- lapply(perfSet[3], as.character)
+
+for(code in uniqueRiskComp$AssetId) {
+  perfSet$assetCode[perfSet$assetCode == substr(code, 1,6)] <- code
+}
+  
+combSet <- merge(perfSet, riskSet, by.x = "pDate" , by.y = "pDate")
+
+combSet$Test <- combSet$assetCode == combSet$AssetId
+match <- sum(combSet$Test)/nrow(perfSet)
+
+print(match)
+```
+
+#Conclusion
+
+Overall we can see that using the MVaRonVaR is the most accurate way of predicting the most volatile asset in the portfolio. However, we can see that this is not a huge percentage of the  time accurate.
